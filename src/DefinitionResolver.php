@@ -5,7 +5,6 @@ namespace LanguageServer;
 
 use LanguageServer\Index\ReadableIndex;
 use LanguageServer\Factory\SymbolInformationFactory;
-use LanguageServerProtocol\SymbolInformation;
 use Microsoft\PhpParser;
 use Microsoft\PhpParser\Node;
 use Microsoft\PhpParser\FunctionLike;
@@ -1194,9 +1193,17 @@ class DefinitionResolver
             if (
                 ($docBlock = $this->getDocBlock($declarationNode))
                 && !empty($varTags = $docBlock->getTagsByName('var'))
-                && ($type = $varTags[0]->getType())
             ) {
-                return $type;
+                if (
+                    ($varTags[0] instanceOf DocBlock\Tags\TagWithType)
+                    && ($type = $varTags[0]->getType())
+                ) {
+                    return $type;
+                }
+                if ($varTags[0] instanceof DocBlock\Tags\InvalidTag) {
+                    return new Types\Mixed_();
+                }
+                return null;
             }
 
             // Resolve the expression
